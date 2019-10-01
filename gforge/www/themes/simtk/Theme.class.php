@@ -121,6 +121,22 @@ class Theme extends Layout {
             echo "<div class='cont_header'>\n"; //  2
 ?>
 
+<?php
+	$strFileAnnouncement = "/usr/share/gforge/www/announcement.html";
+	if (file_exists($strFileAnnouncement)) {
+		// Announcement file exists.
+		$handle = fopen($strFileAnnouncement, "rb");
+		if ($handle !== false) {
+			// Opened successfully. Get content.
+			$strAnnouncement = stream_get_contents($handle);
+			fclose($handle);
+
+			// Display announcement.
+			echo $strAnnouncement;
+		}
+	}
+?>
+
 <nav class="navbar navbar-simtk" role="navigation">
 	<div class="navbar-header">
 		<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -282,20 +298,6 @@ $(window).load(function() {
         // Here starting main div
         echo "<div class='the_body'>\n";
         echo   "<div class='cont_body'>\n";
-
-	$strFileAnnouncement = "/usr/share/gforge/www/announcement.html";
-	if (file_exists($strFileAnnouncement)) {
-		// Announcement file exists.
-		$handle = fopen($strFileAnnouncement, "rb");
-		if ($handle !== false) {
-			// Opened successfully. Get content.
-			$strAnnouncement = stream_get_contents($handle);
-			fclose($handle);
-
-			// Display announcement.
-			echo $strAnnouncement;
-		}
-	}
 
         echo      "<div class='row_body'>\n";
         echo          "<div class='maindiv'>\n"; // here maindiv as bootstrap Column: http://www.helloerik.com/the-subtle-magic-behind-why-the-bootstrap-3-grid-works

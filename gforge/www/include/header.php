@@ -80,6 +80,22 @@
 <div class="the_header">
 <div class="cont_header">
 
+<?php
+	$strFileAnnouncement = "/usr/share/gforge/www/announcement.html";
+	if (file_exists($strFileAnnouncement)) {
+		// Announcement file exists.
+		$handle = fopen($strFileAnnouncement, "rb");
+		if ($handle !== false) {
+			// Opened successfully. Get content.
+			$strAnnouncement = stream_get_contents($handle);
+			fclose($handle);
+
+			// Display announcement.
+			echo $strAnnouncement;
+		}
+	}
+?>
+
 <nav class="navbar navbar-simtk" role="navigation">
 	<div class="navbar-header">
 		<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -168,22 +184,6 @@
 </div>
 <div class="the_body">
 <div class="cont_body">
-
-<?php
-	$strFileAnnouncement = "/usr/share/gforge/www/announcement.html";
-	if (file_exists($strFileAnnouncement)) {
-		// Announcement file exists.
-		$handle = fopen($strFileAnnouncement, "rb");
-		if ($handle !== false) {
-			// Opened successfully. Get content.
-			$strAnnouncement = stream_get_contents($handle);
-			fclose($handle);
-
-			// Display announcement.
-			echo $strAnnouncement;
-		}
-	}
-?>
 
 <div class="row_body">
 <div class="maindiv">
