@@ -512,7 +512,7 @@ function retrieveErrorMessages($error_msg, &$arrErrors) {
 </div> <!-- module_research_help -->
 </div> <!-- col-sm-10 -->
 <div class="col-sm-2 sign-up-right">
-	<p>A SimTK account allows you to create projects, join existing projects, and connect with other SimTK members.  To learn more about our privacy policies, read <a href="/pledge.html">Our Pledge and Your Responsibility</a>.</p>
+	<p>A SimTK account allows you to create projects, join existing projects, and connect with other SimTK members.  To learn more about our privacy policies, read <a href="/pledge.php">Our Pledge and Your Responsibility</a>.</p>
 </div> <!-- col-sm-2 sign-up-right -->
 </div> <!-- row -->
 
