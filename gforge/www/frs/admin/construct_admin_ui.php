@@ -808,7 +808,7 @@ function genLicenseLink($packId) {
 		$strLicense = '<a href="javascript://" data-toggle="popover" data-placement="right" ' .
 			'data-content="' . $strLicense . 
 			'" title="' . $strUseAgreement . ' Use Agreement" ' .
-			'>' . 'View License' . '</a>';
+			'">' . 'View License' . '</a>';
 	}
 
 	return $strLicense;

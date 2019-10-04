@@ -397,7 +397,7 @@ function constructReleaseUI($HTML, $groupId, $groupObj,
 			'</span>';
 	}
 	// Display license.
-	echo "&nbsp;&nbsp;" . genLicenseLink($packId);
+	echo "&nbsp;&nbsp;" . genLicenseLink($packId, $strLic);
 	echo '</p>';
 
 	// Download Package button is only shown for the latest release.
@@ -557,7 +557,7 @@ function constructFilesHeader($theFileType,
 			$panelReleaseClassName . ' ' . 
 			$panelPackageClassName . '">';
 ?>
-	<h2><a class="expander toggle" href="#">Download Links</a></h2>
+	<h2><a class="expander toggle" id="<?php echo $releaseInfo["release_id"]; ?>" href="#">Download Links</a></h2>
 	<div class="download_border"></div>
 		<div class="content">
 <?php
@@ -730,9 +730,9 @@ function constructFileUI($groupId, $release_id,
 
 
 // Generate string for display license.
-function genLicenseLink($packId) {
+function genLicenseLink($packId, &$strLic) {
 
-	$strLicense = "";
+	$strLicense = $strLic = "";
 
 	// Get license.
 	$res_agreement = db_query_params("SELECT simtk_custom_agreement, use_agreement " .
@@ -742,26 +742,26 @@ function genLicenseLink($packId) {
 		"WHERE fp.package_id=$1 " .
 		"AND fua.use_agreement_id <> 0",
 		array($packId));
-
 	$numrows = db_numrows($res_agreement);
 	if ($numrows > 0) {
 		while ($row = db_fetch_array($res_agreement)) {
-			$strLicense = $row['simtk_custom_agreement'];
+			$strLic = $row['simtk_custom_agreement'];
 			$strUseAgreement = $row['use_agreement'];
 		}
 	}
 
-	if (trim($strLicense) != "") {
+	if (trim($strLic) != "") {
 		// Generate popup string.
 		// NOTE: Has to use "javscript://" to avoid 
 		// automatically scrolling to top upon clicking.
 		$strLicense = '<a href="javascript://" data-toggle="popover" data-placement="right" ' .
-			'data-content="' . $strLicense . 
+			'data-content="' . $strLic . 
 			'" title="' . $strUseAgreement . ' Use Agreement" ' .
 			'>' . 'View License' . '</a>';
 	}
 
 	return $strLicense;
 }
+
 
 ?>

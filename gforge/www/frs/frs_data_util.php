@@ -120,12 +120,16 @@ function getFrsPackagesInfo($groupId, $pubSql) {
 		// Get the releases of the package.
 		if ($pubSql == "") {
 			// Visible releases first, then hidden releases.
-			$sqlRelease = "SELECT * FROM frs_release " .
+			$sqlRelease = "SELECT * FROM frs_release frs " .
+				"JOIN users u " .
+				"ON frs.released_by=u.user_id " .
 				"WHERE package_id=$1 " .
 				"ORDER BY status_id, release_date DESC, name ASC";
 		}
 		else {
-			$sqlRelease = "SELECT * FROM frs_release " .
+			$sqlRelease = "SELECT * FROM frs_release frs " .
+				"JOIN users u " .
+				"ON frs.released_by=u.user_id " .
 				"WHERE package_id=$1 AND status_id=1 " .
 				"ORDER BY release_date DESC, name ASC";
 		}
@@ -149,6 +153,8 @@ function getFrsPackagesInfo($groupId, $pubSql) {
                		$releaseDate = $theRelease['release_date'];
                		$releaseStatus = $theRelease['status_id'];
                		$releaseDoi = $theRelease['doi'];
+               		$releaseByFirstname = $theRelease['firstname'];
+               		$releaseByLastname = $theRelease['lastname'];
 			if (isset($theRelease['doi_identifier'])) {
                			$releaseDoiIdentifier = $theRelease['doi_identifier'];
 			}
@@ -218,6 +224,8 @@ function getFrsPackagesInfo($groupId, $pubSql) {
 			$releaseInfo["release_date"] = $releaseDate;
 			$releaseInfo["status_id"] = $releaseStatus;
 			$releaseInfo["doi"] = $releaseDoi;
+               		$releaseInfo["firstname"] = $releaseByFirstname;
+               		$releaseInfo["lastname"] = $releaseByLastname;
 			if (isset($releaseDoiIdentifier)) {
 				$releaseInfo["doi_identifier"] = $releaseDoiIdentifier;
 			}

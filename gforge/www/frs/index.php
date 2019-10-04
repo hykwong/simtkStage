@@ -5,9 +5,9 @@
  * Copyright 1999-2001 (c) VA Linux Systems
  * Copyright 2002-2004 (c) GForge Team
  * Copyright 2010 (c) FusionForge Team
- * Copyright 2013, Franck Villaume - TrivialDev
+ * Copyright 2013-2014, Franck Villaume - TrivialDev
  * http://fusionforge.org/
- * Copyright 2016, Henry Kwong, Tod Hing - SimTK Team
+ * Copyright 2016-2019, Henry Kwong, Tod Hing - SimTK Team
  *
  * This file is part of FusionForge. FusionForge is free software;
  * you can redistribute it and/or modify it under the terms of the
@@ -86,7 +86,11 @@ else {
 frs_header(array('title'=>_('Downloads'), 'group'=>$group_id));
 plugin_hook("blocks", "files index");
 
+// Generate the downloads UI.
 require_once 'frs_front.php';
+
+// Generate the dataset description.
+require_once 'genDatasetInfo.php';
 
 ?>
 
