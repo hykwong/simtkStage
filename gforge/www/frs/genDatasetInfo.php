@@ -163,8 +163,9 @@ function genDatasetHeader($groupObj, $lastRelDate, $lastRelId, $thePackages) {
 
 	$strHeader .= '"name": "' . htmlspecialchars($groupObj->getPublicName(), ENT_QUOTES) . '",';
 
-	// Remove up to 20 iframe tags.
 	$theDesc = $groupObj->getDescription();
+
+	// Remove up to 20 iframe tags.
 	for ($cnt = 0; $cnt < 20; $cnt++) {
 		// Convert "iframe" tag to "a" tag and get "href".
 	 	$strCleaned = cleanTags($theDesc, "iframe", "src");
@@ -226,7 +227,75 @@ function genDatasetHeader($groupObj, $lastRelDate, $lastRelId, $thePackages) {
 	}
 	$theDesc .= "</ul>";
 
-	$strHeader .= '"description": "' .  htmlspecialchars($theDesc, ENT_QUOTES) . '",';
+	$strDesc = htmlspecialchars($theDesc, ENT_QUOTES);
+	if (strlen($strDesc) >= 5000) {
+		// Description is too long. Generate a shorter version.
+
+
+		// Use summary instead of description.
+		$theDesc = $groupObj->getSummary();
+
+		// Remove up to 20 iframe tags.
+		for ($cnt = 0; $cnt < 20; $cnt++) {
+			// Convert "iframe" tag to "a" tag and get "href".
+		 	$strCleaned = cleanTags($theDesc, "iframe", "src");
+			if ($strCleaned !== false) {
+				$theDesc = $strCleaned;
+			}
+			// Convert "object" tag to "a" tag and get "href".
+		 	$strCleaned = cleanTags($theDesc, "object", "src");
+			if ($strCleaned !== false) {
+				$theDesc = $strCleaned;
+			}
+		}
+
+		$numPackages = count($thePackages);
+		$theDesc .= "<br/><br/>" . "This project includes the following software/data packages: <br/>";
+		$theDesc .= "<ul>";
+		foreach ($thePackages as $idxPack=>$packageInfo) {
+			$packageName = $packageInfo["name"];
+			$packageURL = 'https://' . $serverName .
+				'/frs?group_id=' . $groupObj->getID() .
+				'#' . $lastRelId;
+			$packageDesc = $packageInfo["description"];
+
+			// Do not include description.
+			$strPackage = '<a href="' . $packageURL . '">' . $packageName . '</a>';
+	
+			$theDesc .= "<li>" . $strPackage . "</li>";
+		}
+
+		// Get Data Share studies.
+		if ($groupObj->usesPlugin("datashare")) {
+			$group_id = $groupObj->getID();
+			$study = new Datashare($group_id);
+			if ($study && is_object($study)) {
+				$study_result = $study->getStudyByGroup($group_id);
+
+				// Only show public studies.
+				if ($study_result) {
+					foreach ($study_result as $result) {
+						if ($result->active == 1 &&
+							$result->is_private < 2) {
+							$studyTitle = $result->title;
+							$studyURL = 'https://' . $serverName .
+								'/plugins/datashare?group_id=' . 
+								$groupObj->getID();
+							$studyDescription = $result->description;
+							$theDesc .= "<li>" . 
+								'<a href="' . $studyURL . '">' . 
+								$studyTitle . '</a>' . 
+								": " . $studyDescription . "</li>";
+						}
+					}
+				}
+			}
+		}
+		$theDesc .= "</ul>";
+
+		$strDesc = htmlspecialchars($theDesc, ENT_QUOTES);
+	}
+	$strHeader .= '"description": "' .  $strDesc . '",';
 
 	$strHeader .= '"url": "https://' . $serverName . '/projects/' . $groupObj->getUnixName() . '",';
 
@@ -364,7 +433,12 @@ function genPackageDatasetDesc($groupObj, $packageInfo, $releaseInfo) {
 	$strPackage .= '"name": "' . htmlspecialchars($packageName, ENT_QUOTES) . '",';
 
 	$packageDesc = $packageInfo["description"];
-	$strPackage .= '"description": "' . htmlspecialchars($packageDesc, ENT_QUOTES) . '",';
+	$strPackageDesc = htmlspecialchars($packageDesc, ENT_QUOTES);
+	if (strlen($strPackageDesc) >= 5000) {
+		// Package description is too long. Use package name instead.
+		$strPackageDesc = htmlspecialchars($packageName, ENT_QUOTES);
+	}
+	$strPackage .= '"description": "' . $strPackageDesc . '",';
 
 	// License
 	$packId = $packageInfo["package_id"];
