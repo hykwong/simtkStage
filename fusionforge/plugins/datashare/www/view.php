@@ -4,7 +4,7 @@
  *
  * view.php
  * 
- * Copyright 2005-2020, SimTK Team
+ * Copyright 2005-2021, SimTK Team
  *
  * This file is part of the SimTK web portal originating from        
  * Simbios, the NIH National Center for Physics-Based               
@@ -36,6 +36,7 @@ require_once $gfcommon.'include/pre.php';
 require_once $gfplugins.'datashare/www/datashare-utils.php';
 require_once $gfplugins.'datashare/include/Datashare.class.php';
 require_once $gfwww.'project/project_utils.php';
+require_once $gfplugins.'api/include/Api.class.php';
 
 // Override and use the configuration parameters as specified in
 // the file datashare.ini if the file is present and has the relevant parameters.
@@ -52,14 +53,16 @@ if (!isset($datashareServer)) {
 	exit_error("Cannot get datashare server");
 }
 
-$group_id = getStringFromRequest('id');
-$pluginname = getStringFromRequest('pluginname');
-if (!isset($pluginname) || $pluginname == null || trim($pluginname) == "") {
-	// Set a default.
-	$pluginname = 'datashare';
-}
+$group_id = getIntFromRequest('id');
+$study_id = getIntFromRequest('studyid');
+$typeConfirm = getIntFromRequest('typeConfirm');
+$theToken = trim(getStringFromRequest('token'));
+$nameDownload = trim(getStringFromRequest('nameDownload'));
+$pathSelected = trim(getStringFromRequest('pathSelected'));
+$namePackage = trim(getStringFromRequest('namePackage'));
+$strFilesHash = trim(getStringFromRequest('filesHash'));
 
-$study_id = getStringFromRequest('studyid');
+$pluginname = 'datashare';
 
 if (!$group_id || !$study_id) {
 	exit_error("Cannot Process your request","No ID specified");
@@ -69,6 +72,25 @@ $group = group_get_object($group_id);
 if (!$group) {
 	exit_error("Invalid Project", "Inexistent Project");
 }
+
+$userid = 0;
+$member = 0;
+$firstname = "";
+$lastname = "";
+$email = "";
+if (session_loggedin()) {
+	// get user
+	$user = session_get_user(); // get the session user
+	$userid = $user->getID();
+	$firstname = $user->getFirstName();
+	$lastname = $user->getLastName();
+	$email = $user->getEmail();
+
+	if (user_ismember($group_id)) {
+		$member = 1;
+	}
+}
+
 
 if (!($group->usesPlugin ( $pluginname )) ) {//check if the group has the Data Share plugin active
 	exit_error("Error", "First activate the $pluginname plugin through the Project's Admin Interface");
@@ -87,7 +109,6 @@ elseif ($study->isError()) {
 
 datashare_header(array('title'=>'Data Share:'),$group_id);
 
-
 $study_result = $study->getStudy($study_id);
 echo "<h4>&nbsp; " . $study_result[0]->title;
 if ($study->isDOI($study_id)) {
@@ -105,22 +126,42 @@ echo "<div style=\"display: table; width: 100%;\">\n";
 echo "<div class=\"main_col\">\n";
 
 if ($study_result) {
-	$token = $study_result[0]->token;
+
+	// Set timezone.
+	date_default_timezone_set('America/Los_Angeles');
+
+	// Get number of days since epoch.
+	$now = new DateTime();
+	$epoch = new DateTime('1970-01-01');
+	$diffTime = $now->diff($epoch);
+	$numDays = $diffTime->format("%a");
 
 	$private = $study_result[0]->is_private;
-	$userid = 0;
 	$display_study = 0;
-	$member = 0;
 
-	if (session_loggedin()) {
-		// get user
-		$user = session_get_user(); // get the session user
-		$userid = $user->getID();
-		$firstname = $user->getFirstName();
-		$lastname = $user->getLastName();
-
-		if (user_ismember($group_id)) {
-			$member = 1;
+	// Validate token for package download, if present.
+	if (trim($namePackage) != "" && trim($theToken) != "") {
+		$api = new Api;
+		if (!$api || !is_object($api)) {
+			echo "Cannot validate information";
+			echo "</div></div></div></div></div>";
+			site_project_footer(array());
+			exit;
+		}
+		else {
+			if (!$api->verifyToken($study_result[0]->token, $userid, $numDays, $theToken)) {
+				if (session_loggedin()) {
+					// Invalid user.
+					echo "<span>&nbsp;&nbsp;&nbsp;User does not have valid permission for the download.</span>";
+					echo "</div></div></div></div></div>";
+					site_project_footer(array());
+					exit;
+				}
+				else {
+					// User is not logged in. Show login prompt.
+					session_require_perm('datashare', $group_id, 'read_public');
+				}
+			}
 		}
 	}
 
@@ -148,28 +189,63 @@ if ($study_result) {
 				$display_study = 1;
 			}
 			else {
-				echo "Must be Member of Project";
+				echo "You must be a project member to access this private study.";
+				echo "</div></div></div></div></div>";
+				site_project_footer(array());
+				exit;
 			}
 		}
 		else {
-			echo "Private Study.  Please log in";
+			// Generate the URL to return to after user login.
+			$return_to = "/plugins/datashare/view.php?" .
+				"id=" . $group_id .
+				"&studyid=" . $study_id;
+			if ($pathSelected != "") {
+				// selected path is present.
+				$return_to .= "&pathSelected=" . $pathSelected;
+			}
+			echo " Please " .
+				"<a href='/account/login.php?return_to=" .
+				urlencode($return_to) .
+				"'>log in</a> or " .
+				"<a href='/account/register.php'>create an account</a>" .
+				" to access the study.";
+			echo "</div></div></div></div></div>";
+			site_project_footer(array());
+			exit;
 		}
 	}
 
 	if ($display_study) {
-		echo "<form id='fname' action='https://" . $datashareServer . "' method='post' target='my_iframe'>";
-		echo "<input type='hidden' name='section' value='datashare'>";
-		echo "<input type='hidden' name='groupid' value='$group_id'>";
-		echo "<input type='hidden' name='userid' value='$userid'>";
-		echo "<input type='hidden' name='studyid' value='$study_id'>";
-		echo "<input type='hidden' name='isDOI' value='" . $study->isDOI($study_id) . "'>";
-		echo "<input type='hidden' name='doi_identifier' value='" . $study->getDOI($study_id) . "'>";
-		echo "<input type='hidden' name='subject_prefix' value='" . $study_result[0]->subject_prefix . "'>";
-		echo "<input type='hidden' name='token' value='$token'>";
-		echo "<input type='hidden' name='private' value='$private'>";
-		echo "<input type='hidden' name='member' value='$member'>";
-		echo "</form>";
-		echo "<iframe src=\"https://" . 
+		$strInfo = $study_result[0]->token . ":" . $userid . ":" . $numDays;
+		$token = password_hash($strInfo, PASSWORD_DEFAULT);
+?>
+
+<script>
+$(window).ready(function() {
+	// Set up event listener for message posted from child iframe.
+	var myEventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+	var myEventHandler = window[myEventMethod];
+	var myMessageEvent = myEventMethod == "attachEvent" ? "onmessage" : "message";
+
+	// Listen to message.
+	myEventHandler(myMessageEvent, function(theEvent) {
+		if (theEvent.data.event_id == "iframeLoaded") {
+			// NOTE: Use the following to ensure that
+			// the iframe content is displayed when loaded.
+			// Otherwise, the iframe content is sometimes
+			// not displayed until the browser is resized.
+			$("iframe").css("visibility", "visible");
+			$("iframe").css("display", "none");
+			$("iframe").fadeIn(300);
+		}
+	}, false);
+});
+</script>
+
+<?php
+
+		echo "<iframe name=\"" . rand() . "\" src=\"https://" .
 			$datashareServer . 
 			"?section=datashare&" .
 			"groupid=$group_id&" .
@@ -181,6 +257,11 @@ if ($study_result) {
 			"token=$token&" .
 			"private=$private&" .
 			"member=$member&" .
+			"typeConfirm=$typeConfirm&" .
+			"nameDownload=$nameDownload&" .
+			"pathSelected=$pathSelected&" .
+			"namePackage=$namePackage&" .
+			"filesHash=$strFilesHash&" .
 			"firstname=$firstname&" .
 			"lastname=$lastname" .
 			"\" frameborder=\"0\" " .
