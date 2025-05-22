@@ -6,7 +6,7 @@
  * 
  * File to handle categories.
  *
- * Copyright 2005-2019, SimTK Team
+ * Copyright 2005-2025, SimTK Team
  *
  * This file is part of the SimTK web portal originating from        
  * Simbios, the NIH National Center for Physics-Based               
@@ -224,9 +224,9 @@ for ($i = 0; $i < $db_count; $i++) {
 <div class='module_home_categories'>
 		
 	<div class="categories_intro">
-		<div class="project_submenu"><?php echo $fullname; ?></div>
+		<div class="project_submenu"><?php if (isset($fullname)) echo $fullname; ?></div>
 		<div style="clear:both"></div>
-		<p><?php echo $introduction;?></p>
+		<p><?php if (isset($introduction)) echo $introduction;?></p>
 	</div><!-- /categories_intro -->
 
 	<div class="featured_projs" style="Display: none;">

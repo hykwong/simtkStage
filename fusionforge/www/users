@@ -5,6 +5,7 @@
  * Copyright 1999-2001 (c) VA Linux Systems
  * Copyright 2002-2004 (c) GForge Team
  * Copyright 2010-2011, Franck Villaume - Capgemini
+ * Copyright 2005-2025, SimTK Team
  * http://fusionforge.org/
  *
  * This file is part of FusionForge. FusionForge is free software;
@@ -31,7 +32,7 @@ $normalized_urlprefix = normalized_urlprefix();
 $pathinfo = substr_replace(getStringFromServer('REQUEST_URI'), '', 0, strlen($normalized_urlprefix)-1);
 $expl_pathinfo = explode('/', $pathinfo);
 
-if (!$expl_pathinfo[2]) {
+if (!isset($expl_pathinfo[2]) || !$expl_pathinfo[2]) {
 	exit_error(_('No User Name Provided'));
 }
 
