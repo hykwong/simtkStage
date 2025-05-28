@@ -1187,6 +1187,12 @@ class Document extends FFError {
 		switch ($column) {
 			case 'stateid':
 			case 'doc_group': {
+				if ($column == 'doc_group' &&
+					($value == null || $value <= 0)) {
+					// Do not proceed. The doc_group does not exist.
+					return false;
+				}
+
 				$qpa = db_construct_qpa();
 				$qpa = db_construct_qpa($qpa, 'UPDATE doc_data SET ');
 				$qpa = db_construct_qpa($qpa, $column);

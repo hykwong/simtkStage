@@ -8,7 +8,7 @@
  * Copyright 2010, Franck Villaume - Capgemini
  * Copyright (C) 2011-2012 Alain Peyrat - Alcatel-Lucent
  * Copyright 2012-2013, Franck Villaume - TrivialDev
- * Copyright 2016-2023, SimTK Team
+ * Copyright 2016-2025, SimTK Team
  * http://fusionforge.org
  *
  * This file is part of FusionForge. FusionForge is free software;
@@ -284,7 +284,12 @@ class DocumentGroup extends FFError {
 	 * @access	public
 	 */
 	function getID() {
-		return $this->data_array['doc_group'];
+		if ($this->data_array && isset($this->data_array['doc_group'])) {
+			return $this->data_array['doc_group'];
+		}
+		else {
+			return 0;
+		}
 	}
 
 	/**
@@ -294,7 +299,12 @@ class DocumentGroup extends FFError {
 	 * @access	public
 	 */
 	function getParentID() {
-		return $this->data_array['parent_doc_group'];
+		if ($this->data_array && isset($this->data_array['parent_doc_group'])) {
+			return $this->data_array['parent_doc_group'];
+		}
+		else {
+			return 0;
+		}
 	}
 
 	/**

@@ -6,6 +6,7 @@
  * Copyright 2002-2003, Tim Perdue/GForge, LLC
  * Copyright 2010-2011, Franck Villaume - Capgemini
  * Copyright 2013, Franck Villaume - TrivialDev
+ * Copyright 2016-2025, SimTK Team
  * http://fusionforge.org
  *
  * This file is part of FusionForge. FusionForge is free software;
@@ -70,7 +71,7 @@ if (is_array($d_arr)) {
 	}
 }
 
-if (is_array($trashnested_groups[$dirid])) {
+if (isset($trashnested_groups[$dirid]) && is_array($trashnested_groups[$dirid])) {
 	foreach ($trashnested_groups[$dirid] as $dg) {
 		$localdf = new DocumentFactory($g);
 		$localdf->setDocGroupID($dg->getID());
