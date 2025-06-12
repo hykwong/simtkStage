@@ -6,7 +6,7 @@
  * Copyright 2009, Roland Mas
  * Copyright (C) 2010 Alain Peyrat - Alcatel-Lucent
  * Copyright 2013,2015 Franck Villaume - TrivialDev
- * Copyright 2016-2019, Henry Kwong, Tod Hing - SimTK Team
+ * Copyright 2016-2025, Henry Kwong, Tod Hing - SimTK Team
  *
  * This file is part of FusionForge. FusionForge is free software;
  * you can redistribute it and/or modify it under the terms of the
@@ -772,8 +772,14 @@ function report_actgraph($type, $SPAN, $start, $end, $id, $area) {
 			$hookParams['texts'] = &$texts;
 			plugin_hook("activity", $hookParams);
 
-			$areaname = $texts[0];
-			$label[] = $texts[0];
+			if (isset($texts[0])) {
+				$areaname = $texts[0];
+				$label[] = $texts[0];
+			}
+			else {
+				$areaname = "";
+				$label[] = "";
+			}
 			$sum = array();
 			foreach ($results as $arr) {
 				$dd = date($formatDate, $arr['activity_date']);
