@@ -8,7 +8,7 @@
  * Copyright 2012, Franck Villaume - TrivialDev
  * Copyright © 2012
  *	Thorsten Glaser <t.glaser@tarent.de>
- * Copyright 2016-2021, Henry Kwong, Tod Hing - SimTK Team
+ * Copyright 2016-2025, SimTK Team
  *
  * This file is part of FusionForge. FusionForge is free software;
  * you can redistribute it and/or modify it under the terms of the
@@ -405,7 +405,6 @@ function getFollowingProjects($user, &$cntProjects) {
 			// Not an active project. Skip.
 			continue;
 		}
-		$cntProjects++;
 
 		$group_id = db_result($result, $cnt, 'group_id');
 		$group_name = db_result($result, $cnt, 'group_name');
@@ -416,9 +415,11 @@ function getFollowingProjects($user, &$cntProjects) {
 		//$project_link = util_make_link_g($unix_group_name, $group_id, $group_name);
 		//$retStr .= '<br/>' . $project_link; 
 
-		$arrProjects[$cnt]['group_name'] = $group_name;
-		$arrProjects[$cnt]['simtk_logo_file'] = $simtk_logo_file;
-		$arrProjects[$cnt]['unix_group_name'] = $unix_group_name;
+		$arrProjects[$cntProjects]['group_name'] = $group_name;
+		$arrProjects[$cntProjects]['simtk_logo_file'] = $simtk_logo_file;
+		$arrProjects[$cntProjects]['unix_group_name'] = $unix_group_name;
+
+		$cntProjects++;
 	}
 
 	// Display projects followed in a carousel.
