@@ -67,6 +67,9 @@ case 'file':
 	// EXAMPLE: https://SERVER_NAME/frs/download_confirm.php/file/FILE_ID/FILE_TO_DOWNLOAD?group_id=GROUP_ID
 
 	// Get FRSFile object.
+	if (!isset($expl_pathinfo[4])) {
+		exit_error('Invalid url');
+	}
 	$file_id = $expl_pathinfo[4];
 	$frsFile = frsfile_get_object($file_id);
 	if (!$frsFile) {
@@ -131,6 +134,9 @@ case 'file':
 
 case 'latestzip':
 	// EXAMPLE: https://SERVER_NAME/frs/download_confirm.php/latestzip/PACKAGE_ID/PACKAGE_TO_DOWNLOAD?group_id=GROUP_ID
+	if (!isset($expl_pathinfo[4])) {
+		exit_error('Invalid url');
+	}
 	$package_id = $expl_pathinfo[4];
 
 	$frsPackage = frspackage_get_object($package_id);
@@ -190,6 +196,12 @@ case 'latestzip':
 
 case 'latestfile':
 	// EXAMPLE: https://SERVER_NAME/frs/download_confirm.php/latestfile/PACKAGE_ID/FILE_TO_DOWNLOAD?group_id=GROUP_ID
+	if (!isset($expl_pathinfo[4])) {
+		exit_error('Invalid url');
+	}
+	if (!isset($expl_pathinfo[5])) {
+		exit_error('Invalid url');
+	}
 	$package_id = $expl_pathinfo[4];
 	$tmpStr = $expl_pathinfo[5];
 	// Remove "?" and subsequence characters.
@@ -276,6 +288,9 @@ case 'latestfile':
 
 case 'release':
 	// EXAMPLE: https://SERVER_NAME/frs/download_confirm.php/release/RELEASE_ID?group_id=GROUP_ID
+	if (!isset($expl_pathinfo[4])) {
+		exit_error('Invalid url');
+	}
 	$tmpStr = $expl_pathinfo[4];
 	// Remove "?" and subsequence characters.
 	$idx = stripos($tmpStr, "?");
