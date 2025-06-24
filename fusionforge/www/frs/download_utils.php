@@ -31,6 +31,10 @@
  * License along with SimTK. If not, see  
  * <http://www.gnu.org/licenses/>.
  */ 
+
+require_once '../env.inc.php';
+require_once $gfcommon.'include/pre.php';
+require_once $gfcommon.'include/mailinglist_utils.php';
  
 DEFINE('INPUT_EXPECTED_USE', '<div style="font-weight: normal;">' .
 	'Please describe how you expect to use this software:' .
@@ -73,7 +77,11 @@ function checkMailListMembership($groupListId, &$retListName) {
 		return false;
 	}
 
-	$sqlListName = "SELECT list_name FROM mail_group_list " .
+	// Do not include deprecated lists.
+	$sqlListName = "SELECT mgl.list_name AS list_name " .
+		"FROM mail_group_list mgl " .
+		"JOIN mail_list_keep mlk " .
+		"ON mgl.list_name=mlk.list_name " .
 		"WHERE group_list_id=$1";
 	$res = db_query_params($sqlListName, array($groupListId));
 	$retListName = db_result($res, 0, 'list_name');
@@ -82,24 +90,29 @@ function checkMailListMembership($groupListId, &$retListName) {
 		return false;
 	}
 
-	// Get mail list members.
-	$cmdListMembers = "/usr/lib/mailman/bin/list_members $retListName";
-	exec($cmdListMembers, $listMembers);
+	if (defined('MAILING_LISTS_VERSION') && MAILING_LISTS_VERSION == 3) {
+		// Mailman3: Do not show list which has been deleted.
+		if (!isListPresentMailman3($retListName)) {
+			// Do not include deleted list.
+			return false;
+		}
+	}
 
 	$theUser = session_get_user();
 	if ($theUser->getID() == 100) {
 		return false;
 	}
 	$userEmail = strtolower($theUser->getEmail());
-	for ($cnt = 0; $cnt < count($listMembers); $cnt++ ) {
-		if (strtolower($listMembers[$cnt]) == $userEmail) {
-			// Already a member of this mail list.
-			return false;
-		}
-	}
 
-	// Not member of this list. Prompt user for membership.
-	return true;
+	$isMember = isMemberOfMailingList($retListName, $userEmail);
+	if ($isMember) {
+		// Already a member of this mail list.
+		return false;
+	}
+	else {
+		// Not member of this list. Prompt user for membership.
+		return true;
+	}
 }
 
 // If the user has downloaded this release before, get the previous expected use.

@@ -5,6 +5,7 @@
  * Copyright 1999-2001, VA Linux Systems, Inc.
  * Copyright 2003-2004 (c) Guillaume Smet - Open Wide
  * Copyright 2010 (c) Franck Villaume
+ * Copyright 2016-2025, SimTK Team
  *
  * This file is part of FusionForge. FusionForge is free software;
  * you can redistribute it and/or modify it under the terms of the
@@ -48,6 +49,15 @@ session_require_perm ('project_admin', $group->getID()) ;
 $ml = new MailingList($group,getIntFromGet('group_list_id'));
 if ($ml->isError()) {
 	exit_error($ml->getErrorMessage(),'home');
+}
+
+if (defined('MAILING_LISTS_VERSION') && MAILING_LISTS_VERSION == 3) {
+	mail_header(array('title' => _('Permanently Delete Mailing List ') . $ml->getName()));
+	echo "Please contact the <a href='/sendmessage.php?recipient=admin&groupname=" .
+		$group->getUnixName() . 
+		"'>SimTK WebMaster</a> on Mailing List Administration.";
+	mail_footer();
+	exit;
 }
 
 if (getStringFromPost('submit')) {

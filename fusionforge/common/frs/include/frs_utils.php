@@ -26,6 +26,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+require_once $gfcommon . 'include/mailinglist_utils.php';
+
 /*
 	Standard header to be used on all /project/admin/* pages
 */
@@ -237,9 +239,13 @@ function frs_show_mailinglist_popup ($group_id, $name='group_list_id', $checked_
 	}
 	$unix_group_name = db_result($res, 0, 'unix_group_name');
 
-	$strQuery = "SELECT group_list_id, list_name FROM mail_group_list " .
-		"WHERE group_id=$1 AND list_name!=$2 " .
-		"ORDER BY list_name";
+	// Do not include deprecated lists.
+	$strQuery = "SELECT group_list_id, mgl.list_name AS list_name " .
+		"FROM mail_group_list mgl " .
+		"JOIN mail_list_keep mlk " .
+		"ON mgl.list_name=mlk.list_name " .
+		"WHERE mgl.group_id=$1 AND mgl.list_name!=$2 " .
+		"ORDER BY mgl.list_name";
 	$resMailingLists = db_query_params($strQuery, 
 		array($group_id, $unix_group_name . "-commits"));
 	if (db_numrows($resMailingLists) == 0) {
@@ -247,7 +253,45 @@ function frs_show_mailinglist_popup ($group_id, $name='group_list_id', $checked_
 		return false;
 	}
 
-	return html_build_select_box ($resMailingLists,$name,$checked_val,false);
+	// Retrieve group list ids and list names from query result.
+	$groupListIds = util_result_column_to_array($resMailingLists, 0);
+	$listNames = util_result_column_to_array($resMailingLists, 1);
+
+	if (defined('MAILING_LISTS_VERSION') && MAILING_LISTS_VERSION == 3) {
+		// Mailman3: Do not include lists which have been deleted.
+		$removed = false;
+		foreach ($listNames as $idx=>$listName) {
+			if (!isListPresentMailman3($listName)) {
+				// Mailing list has been deleted.
+				unset($listNames[$idx]);
+				unset($groupListIds[$idx]);
+				$removed = true;
+			}
+		}
+		if ($removed) {
+			// Reset indexes after removal.
+			$listNames = array_values($listNames);
+			$groupListIds = array_values($groupListIds);
+		}
+	}
+
+	// No non-deprecated list which has not been deleted available to show.
+	if (count($listNames) == 0 || count($groupListIds) == 0) {
+		return false;
+	} 
+
+	// If previously selected list deleted, pre-select first list.
+	if (!in_array($checked_val, $groupListIds) &&
+		isset($groupListIds[0])) {
+		$checked_val = $groupListIds[0];
+	}
+
+	// Mail list selection.
+	return html_build_select_box_from_arrays($groupListIds, 
+		$listNames, 
+		$name, 
+		$checked_val, 
+		false);
 }
 
 function frs_add_file_from_form($release, $type_id, $processor_id, $release_date, 

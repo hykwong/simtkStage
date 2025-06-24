@@ -7,7 +7,7 @@
  * Portions Copyright 1999-2001 (c) VA Linux Systems
  * The rest Copyright 2002-2004 (c) GForge Team
  * Copyright 2010, Franck Villaume - Capgemini
- * Copyright 2016-2019, Henry Kwong, Tod Hing - SimTK Team
+ * Copyright 2016-2025, SimTK Team
  * http://fusionforge.org/
  *
  * This file is part of FusionForge. FusionForge is free software;
@@ -218,6 +218,10 @@ if(forge_get_config('use_activity')) {
 }
 
 
+/*
+
+// Deprecate mailing lists usage.
+
 if(forge_get_config('use_mail')) {
 ?>
 <tr>
@@ -230,6 +234,8 @@ if(forge_get_config('use_mail')) {
 </tr>
 <?php
 }
+
+*/
 
 if(forge_get_config('use_docman')) {
 ?>

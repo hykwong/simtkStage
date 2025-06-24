@@ -6,7 +6,7 @@
  * Copyright 2002-2004 (c) GForge Team
  * Copyright 2012-2014, Franck Villaume - TrivialDev
  * http://fusionforge.org/
- * Copyright 2016-2022, Henry Kwong, Tod Hing - SimTK Team
+ * Copyright 2016-2025, SimTK Team
  *
  * This file is part of FusionForge. FusionForge is free software;
  * you can redistribute it and/or modify it under the terms of the
@@ -31,6 +31,7 @@ require_once $gfcommon.'frs/FRSRelease.class.php';
 require_once $gfcommon.'frs/FRSFile.class.php';
 require_once $gfcommon.'frs/include/frs_utils.php';
 require_once $gfcommon . 'include/githubUtils.php';
+require_once $gfcommon . 'include/mailinglist_utils.php';
 
 defined('MAX_GITHUB_FILESIZE') or define('MAX_GITHUB_FILESIZE', 250 * 1024 * 1024);
 
@@ -734,9 +735,13 @@ if ($frsp->getUseAgreement() != 0) {
 </tr>
 
 <?php
-$strMailingListPopup = frs_show_mailinglist_popup($group_id, 'group_list_id', $frsf->getGroupListId());
-if ($strMailingListPopup != false && trim($strMailingListPopup) != "") {
-	echo '
+// Get Undeprecated mailing lists.
+$arrMailList = getUndeprecatedMailLists($group_id);
+if (count($arrMailList) > 0) {
+
+	$strMailingListPopup = frs_show_mailinglist_popup($group_id, 'group_list_id', $frsf->getGroupListId());
+	if ($strMailingListPopup != false && trim($strMailingListPopup) != "") {
+		echo '
 <tr>
 	<td colspan="2"><div class="downloadFileOptions"><input class="upFile" type="checkbox" id="useMailList" name="use_mail_list" value="1" ';
 	if ($frsf->getUseMailList() === "1") {
@@ -752,6 +757,7 @@ if ($strMailingListPopup != false && trim($strMailingListPopup) != "") {
 	</td>
 </tr>
 	';
+	}
 }
 ?>
 
