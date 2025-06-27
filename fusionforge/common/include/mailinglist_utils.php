@@ -247,6 +247,12 @@ function addMemberToMailingList($listName, $userName, $userEmail, $digest) {
 			$listName;
 	}
 	else if (MAILING_LISTS_VERSION == 3) {
+
+		if (!isListPresentMailman3($listName)) {
+			// Ignore. Mailing list is not present.
+			return;
+		}
+
 		// Mailman3.
 		if ($digest) {
 			$deliveryOption = "-d plain";
@@ -295,8 +301,14 @@ function removeMemberFromMailingList($listName, $userEmail) {
 			"/usr/lib/mailman/bin/remove_members $listName $userEmail";
 	}
 	else if (MAILING_LISTS_VERSION == 3) {
+
+		if (!isListPresentMailman3($listName)) {
+			// Ignore. Mailing list is not present.
+			return;
+		}
+
 		// Mailman3.
-		$cmdAddMember = $strPrepend . 
+		$cmdUnsubscribe = $strPrepend . 
 			"/opt/mailman/venv/bin/mailman --run-as-root delmembers " .
 			"-m $userEmail " .
 			"-l $listName". "@" . $mlHost;
@@ -306,7 +318,7 @@ function removeMemberFromMailingList($listName, $userEmail) {
 		return;
 	}
 
-	exec($cmdAddMember);
+	exec($cmdUnsubscribe);
 
 	$fp = fopen("/opt/tmp/MailingListUnsubscription.log", "a+");
 	fwrite($fp, "$listName : Removed $userEmail at " . date('Y-m-d H:i:s') . "\n");
