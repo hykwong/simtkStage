@@ -147,7 +147,7 @@ function isDigestEnabled($listName) {
 
 	if (MAILING_LISTS_VERSION == 2) {
 		// Access legacy Mailman2.
-		return isDigestEnabledLegacyMailman2($listName);
+		return isDigestEnabledMailman2($listName);
 	}
 	else if (MAILING_LISTS_VERSION != 3) {
 		return false;
@@ -179,12 +179,118 @@ function isDigestEnabled($listName) {
 	return $isEnabled;
 }
 
+// Update user email address in all mailing lists.
+function updateMailingListsEmailAddr($userName, $userEmailOld, $userEmailNew) {
+
+	if (MAILING_LISTS_VERSION != 3) {
+		return;
+	}
+
+	// Mailman3.
+
+	$userEmailOld = escapeshellcmd($userEmailOld);
+	if (!validate_email($userEmailOld)) {
+		return;
+	}
+	$userEmailNew = escapeshellcmd($userEmailNew);
+	if (!validate_email($userEmailNew)) {
+		return;
+	}
+
+	// Get mailing lists host.
+	$mlHost = forge_get_config("lists_host");
+	if (!isset($mlHost)) {
+		// Cannot get mailing lists credentials.
+		return;
+	}
+	$strPrepend = "ssh root@" . $mlHost . " ";
+
+	// Change email address on all mailing lists.
+	$cmdChangeAddr = $strPrepend . 
+		"/opt/mailman/venv/bin/mailman --run-as-root " .
+		"changeaddress $userEmailOld $userEmailNew 2>&1";
+
+	$fp = fopen("/opt/tmp/MailingListChangeAddress.log", "a+");
+	fwrite($fp, "User $userName Old: $userEmailOld New: $userEmailNew ");
+
+	$retStatus = exec($cmdChangeAddr);
+
+	// Log error if exists.
+	if (($idx = stripos($retStatus, "Error:")) !== false) {
+		$strError = substr($retStatus, $idx);
+		fwrite($fp, "'" . $strError . "' at " . date('Y-m-d H:i:s') . "\n");
+	}
+	else {
+		fwrite($fp, "at " . date('Y-m-d H:i:s') . "\n");
+	}
+	fclose($fp);
+}
+
+// Remove user email address from all mailing lists.
+function removeMailingListsEmailAddr($userName, $userEmailOld) {
+
+	if (MAILING_LISTS_VERSION != 3) {
+		// This method is only in Mailman3.
+		return;
+	}
+
+	$userEmailOld = escapeshellcmd($userEmailOld);
+	if (!validate_email($userEmailOld)) {
+		return;
+	}
+
+	// Get mailing lists host.
+	$mlHost = forge_get_config("lists_host");
+	if (!isset($mlHost)) {
+		// Cannot get mailing lists credentials.
+		return;
+	}
+	$strPrepend = "ssh root@" . $mlHost . " ";
+
+	$cmdRemoveAddr = $strPrepend . 
+		"/opt/mailman/venv/bin/mailman --run-as-root " .
+		"delmembers --fromall -m $userEmailOld";
+
+	$retStatus = exec($cmdRemoveAddr);
+
+	$fp = fopen("/opt/tmp/MailingListChangeAddress.log", "a+");
+	fwrite($fp, "User $userName : Removed $userEmailOld at " . date('Y-m-d H:i:s') . "\n");
+	fclose($fp);
+
+	// NOTE: After delmembers, database may still contain email address.
+	// The email address entry interferes with future operations 
+	// like changeaddress and the email address needs to be 
+	// removed from the database.
+	removeAddrFromDB($userEmailOld);
+
+	return;
+}
+
+// Remove email address from Mailman3 database.
+function removeAddrFromDB($userEmailOld) {
+
+	$strQuery  = "DELETE FROM address WHERE email=$1";
+	$res = queryMailman($strQuery, array($userEmailOld));
+
+	$fp = fopen("/opt/tmp/MailingListChangeAddress.log", "a+");
+	if ($res == null) {
+		fwrite($fp, "Cannot remove from DB: $userEmailOld at " . date('Y-m-d H:i:s') . "\n");
+	}
+	else {
+		fwrite($fp, "Removed from DB: $userEmailOld at " . date('Y-m-d H:i:s') . "\n");
+
+		// Free resultset.
+		pg_free_result($res);
+	}
+	fclose($fp);
+}
+
 // Check whether user is member of mailing list.
 function isMemberOfMailingList($listName, $userEmail) {
 
 	if (MAILING_LISTS_VERSION == 2) {
 		// Access legacy Mailman2.
-		return isMemberOfMailingListLegacyMailman2($listName, $userEmail);
+		return isMemberOfMailingListMailman2($listName, $userEmail);
 	}
 	else if (MAILING_LISTS_VERSION != 3) {
 		return false;
@@ -223,6 +329,12 @@ function isMemberOfMailingList($listName, $userEmail) {
 // Add member to mailing list.
 function addMemberToMailingList($listName, $userName, $userEmail, $digest) {
 
+	$userName = escapeshellcmd($userName);
+	$userEmail = escapeshellcmd($userEmail);
+	if (!validate_email($userEmail)) {
+		return;
+	}
+
 	// Get mailing lists host.
 	$mlHost = forge_get_config("lists_host");
 	if (!isset($mlHost)) {
@@ -260,7 +372,7 @@ function addMemberToMailingList($listName, $userName, $userEmail, $digest) {
 		else {
 			$deliveryOption = "-d regular";
 		}
-		$cmdAddMember = "echo '$userName <$userEmail>' | " . 
+		$cmdAddMember = "echo $userEmail | " . 
 			$strPrepend . 
 			"/opt/mailman/venv/bin/mailman --run-as-root addmembers " .
 			$deliveryOption . 
@@ -286,6 +398,11 @@ function addMemberToMailingList($listName, $userName, $userEmail, $digest) {
 
 // Remove member from mailing list.
 function removeMemberFromMailingList($listName, $userEmail) {
+
+	$userEmail = escapeshellcmd($userEmail);
+	if (!validate_email($userEmail)) {
+		return;
+	}
 
 	// Get mailing lists host.
 	$mlHost = forge_get_config("lists_host");
@@ -325,8 +442,9 @@ function removeMemberFromMailingList($listName, $userEmail) {
 	fclose($fp);
 }
 
-// Check whether digests are enabled in Mailman 2 mailing list.
-function isDigestEnabledLegacyMailman2($listName) {
+
+// Check whether digests are enabled in Mailman2 mailing list.
+function isDigestEnabledMailman2($listName) {
 
 	if (MAILING_LISTS_VERSION != 2) {
 		return false;
@@ -354,8 +472,13 @@ function isDigestEnabledLegacyMailman2($listName) {
 	}
 }
 
-// Check whether user is member of Mailman 2 mailing list.
-function isMemberOfMailingListLegacyMailman2($listName, $userEmail) {
+// Check whether user is member of Mailman2 mailing list.
+function isMemberOfMailingListMailman2($listName, $userEmail) {
+
+	$userEmail = escapeshellcmd($userEmail);
+	if (!validate_email($userEmail)) {
+		return false;
+	}
 
 	if (MAILING_LISTS_VERSION != 2) {
 		return false;
