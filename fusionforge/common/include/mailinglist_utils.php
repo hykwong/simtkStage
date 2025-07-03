@@ -117,14 +117,14 @@ function isListPresentMailman3($listName) {
 
 	if (MAILING_LISTS_VERSION !== 3) {
 		// This check is only for Mailman3.
-		return false;
+		return true;
 	}
 
 	$strQuery = "SELECT count(*) as num_lists FROM mailinglist WHERE list_name=$1";
 	$arrParams = array($listName);
 	$res = queryMailman($strQuery, $arrParams);
 	if ($res == null) {
-		return false;
+		return true;
 	}
 	while ($row = pg_fetch_array($res, null, PGSQL_ASSOC)) {
 		$numLists = $row["num_lists"];

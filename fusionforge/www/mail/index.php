@@ -7,7 +7,7 @@
  * Copyright 2010 (c) Franck Villaume - Capgemini
  * Copyright (C) 2011 Alain Peyrat - Alcatel-Lucent
  * Copyright 2012, Jean-Christophe Masson - French National Education Department
- * Copyright 2016-2019, Henry Kwong, Tod Hing - SimTK Team
+ * Copyright 2016-2025, SimTK Team
  * http://fusionforge.org/
  *
  * This file is part of FusionForge. FusionForge is free software;
@@ -28,7 +28,7 @@
 
 require_once '../env.inc.php';
 require_once $gfcommon.'include/pre.php';
-require_once $gfwww.'mail/../mail/mail_utils.php';
+require_once $gfwww.'mail/mail_utils.php';
 
 require_once $gfcommon.'mail/MailingList.class.php';
 require_once $gfcommon.'mail/MailingListFactory.class.php';
@@ -70,15 +70,20 @@ if ($group_id) {
 	$mlArray = $mlFactory->getMailingLists();
 
 	if ($mlFactory->isError()) {
-		echo $HTML->error_msg(sprintf(_('Unable to get the list %s: %s'), $group->getPublicName(), $mlFactory->getErrorMessage()));
+		echo $HTML->error_msg(sprintf('Unable to get the list %s: %s',
+			$group->getPublicName(), 
+			$mlFactory->getErrorMessage()));
 		mail_footer();
 		exit;
 	}
 
 	$mlCount = count($mlArray);
-	if($mlCount == 0) {
-		echo $HTML->information(sprintf(_('No Lists found for %s'), $group->getPublicName()));
-		echo '<p>'._('Project administrators use the admin link to request mailing lists.').'</p>';
+	if ($mlCount == 0) {
+		echo "<br/><br/>Mailing lists have been deprecated. " .
+                                "If you have questions, please contact the " .
+                                "<a href='/sendmessage.php?recipient=admin&groupname=" .
+                                $group->getUnixName() .
+                                "'>SimTK WebMaster</a>.";
 		mail_footer();
 		exit;
 	}

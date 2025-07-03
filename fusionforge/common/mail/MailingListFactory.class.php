@@ -6,6 +6,7 @@
  * Copyright 2003, Guillaume Smet
  * Copyright 2009, Roland Mas
  * Copyright 2013, Franck Villaume - TrivialDev
+ * Copyright 2005-2025, SimTK Team
  *
  * This file is part of FusionForge. FusionForge is free software;
  * you can redistribute it and/or modify it under the terms of the
@@ -90,22 +91,38 @@ class MailingListFactory extends FFError {
 		if (session_loggedin()) {
 			$perm = $this->Group->getPermission();
 			if ($perm && is_object($perm) && $perm->isMember()) {
-				$public_flag = MAIL__MAILING_LIST_IS_PRIVATE.', '.MAIL__MAILING_LIST_IS_PUBLIC;
+				$public_flag = MAIL__MAILING_LIST_IS_PRIVATE . ', ' . 
+					MAIL__MAILING_LIST_IS_PUBLIC;
 			}
 		}
 
-		$result = db_query_params ('SELECT * FROM mail_group_list WHERE group_id=$1 AND is_public = ANY ($2) ORDER BY list_name',
-					   array ($this->Group->getID(),
-						  db_int_array_to_any_clause (array (MAIL__MAILING_LIST_IS_PRIVATE,
-										     MAIL__MAILING_LIST_IS_PUBLIC)))) ;
+		$result = db_query_params("SELECT * FROM mail_group_list mgl " .
+			"JOIN mail_list_keep mlk " .
+			"ON mgl.list_name=mlk.list_name " .
+			"WHERE group_id=$1 AND is_public=ANY ($2) " .
+			"ORDER BY mgl.list_name",
+			array($this->Group->getID(),
+				db_int_array_to_any_clause(array(
+					MAIL__MAILING_LIST_IS_PRIVATE, 
+					MAIL__MAILING_LIST_IS_PUBLIC)
+				)
+			)
+		);
 
 		if (!$result) {
-			$this->setError(_('Error Getting mailing list')._(': ').db_error());
+			$this->setError('Error Getting mailing list' . ': ' . db_error());
 			return false;
-		} else {
+		}
+		else {
 			$this->mailingLists = array();
+			// Non-deprecated list which has not been deleted.
 			while ($arr = db_fetch_array($result)) {
-				$this->mailingLists[] = new MailingList($this->Group, $arr['group_list_id'], $arr);
+				// Mailman3: Do not include deleted list.
+				if (isListPresentMailman3($arr['list_name'])) {
+					$this->mailingLists[] = new MailingList($this->Group, 
+						$arr['group_list_id'], 
+						$arr);
+				}
 			}
 		}
 		return $this->mailingLists;

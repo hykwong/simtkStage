@@ -6,6 +6,7 @@
  * Copyright 2003, Guillaume Smet
  * Copyright 2009, Roland Mas
  * Copyright 2012, Franck Villaume - TrivialDev
+ * Copyright 2016-2025, SimTK Team
  *
  * This file is part of FusionForge. FusionForge is free software;
  * you can redistribute it and/or modify it under the terms of the
@@ -25,6 +26,7 @@
 
 require_once $gfcommon.'include/FFError.class.php';
 require_once $gfcommon.'include/SysTasksQ.class.php';
+require_once $gfcommon.'include/mailinglist_utils.php';
 
 class MailingList extends FFError {
 
@@ -371,10 +373,17 @@ Thank you for registering your project with %1$s.'), forge_get_config ('forge_na
 	 */
 	function getArchivesUrl() {
 		$host = util_url_prefix() . forge_get_config('lists_host');
-		if ($this->isPublic()) {
-			return $host . '/pipermail/' . $this->getName() . '/';
-		} else {
-			return $host . '/mailman/private/' . $this->getName() . '/';
+		if (defined('MAILING_LISTS_VERSION') && MAILING_LISTS_VERSION == 3) {
+			return $host . '/archives/list/' . $this->getName() . 
+				'@' . forge_get_config('lists_host') . '/';
+		}
+		else {
+			if ($this->isPublic()) {
+				return $host . '/pipermail/' . $this->getName() . '/';
+			}
+			else {
+				return $host . '/mailman/private/' . $this->getName() . '/';
+			}
 		}
 	}
 
@@ -384,8 +393,14 @@ Thank you for registering your project with %1$s.'), forge_get_config ('forge_na
 	 * @return	string	url of the info page
 	 */
 	function getExternalInfoUrl() {
-		return util_url_prefix() . forge_get_config('lists_host') .
-		    '/mailman/listinfo/' . $this->getName();
+		$host = util_url_prefix() . forge_get_config('lists_host');
+		if (defined('MAILING_LISTS_VERSION') && MAILING_LISTS_VERSION == 3) {
+			return $host . '/mailman3/lists/' . $this->getName() . 
+				'.' . forge_get_config('lists_host') . '/';
+		}
+		else {
+			return $host . '/mailman/listinfo/' . $this->getName();
+		}
 	}
 
 	/**
