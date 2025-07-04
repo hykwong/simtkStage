@@ -85,6 +85,7 @@ if ($group_id) {
 	);
 
 	$cnt = 0;
+	$hasDenied = false;
 	for ($j = 0; $j < count($mlArray); $j++) {
 		$currentList =& $mlArray[$j];
 		if (!$currentList->isPermissionDeniedError()) {
@@ -119,17 +120,25 @@ if ($group_id) {
 				echo '</tr>';
 			}
 		}
+		else {
+			$hasDenied = true;
+		}
 	}
 
 	if ($cnt > 0) {
 		echo $HTML->listTableBottom();
 	}
 	else {
-		echo "<br/><br/>Mailing lists have been deprecated. " .
+		if ($hasDenied) {
+			echo "<br/><br/>Permission is required to access mailing lists.";
+		}
+		else {
+			echo "<br/><br/>Mailing lists have been deprecated. " .
                                 "If you have questions, please contact the " .
                                 "<a href='/sendmessage.php?recipient=admin&groupname=" .
                                 $group->getUnixName() .
                                 "'>SimTK WebMaster</a>.";
+		}
 	}
 
 	mail_footer();
