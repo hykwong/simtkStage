@@ -130,11 +130,20 @@ function displayStatsBlock($groupObj) {
 
 	// Mailing list.
 	if ($groupObj->usesMail()) {
-	   $mlFactory = new MailingListFactory($groupObj);
-	   $mlArray = $mlFactory->getMailingLists();
-	   if (count($mlArray) != 0) {
-	      echo '<div class="share_text" style="margin-bottom:6px;"><a class="btn-blue share_text_button" href="/mail/index.php?group_id=' . $group_id . '" style="width:158px;">Join Mailing Lists</a></div>';
-       }
+		$mlFactory = new MailingListFactory($groupObj);
+		$mlArray = $mlFactory->getMailingLists();
+		$cnt = 0;
+		for ($j = 0; $j < count($mlArray); $j++) {
+			$currentList =& $mlArray[$j];
+			if (!$currentList->isPermissionDeniedError() && 
+				!$currentList->isError() &&
+				$currentList->getStatus() != MAIL__MAILING_LIST_IS_REQUESTED) {
+				$cnt++;
+			}
+		}
+		if ($cnt > 0) {
+			echo '<div class="share_text" style="margin-bottom:6px;"><a class="btn-blue share_text_button" href="/mail/index.php?group_id=' . $group_id . '" style="width:158px;">Join Mailing Lists</a></div>';
+		}
 	}
 	
 	if ($groupObj->isPublic() && $groupObj->usesTracker()) {

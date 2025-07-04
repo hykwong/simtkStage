@@ -77,55 +77,65 @@ if ($group_id) {
 		exit;
 	}
 
-	$mlCount = count($mlArray);
-	if ($mlCount == 0) {
-		echo "<br/><br/>Mailing lists have been deprecated. " .
-                                "If you have questions, please contact the " .
-                                "<a href='/sendmessage.php?recipient=admin&groupname=" .
-                                $group->getUnixName() .
-                                "'>SimTK WebMaster</a>.";
-		mail_footer();
-		exit;
-	}
-
-	echo '<p>' . _('Choose a list to browse, search, and post messages.') . '</p>';
-
 	$tableHeaders = array(
 		_('Mailing List'),
 		_('Address'),
 		_('Description'),
 		_('Subscription')
 	);
-	echo $HTML->listTableTop($tableHeaders);
 
-	for ($j = 0; $j < $mlCount; $j++) {
+	$cnt = 0;
+	for ($j = 0; $j < count($mlArray); $j++) {
 		$currentList =& $mlArray[$j];
 		if (!$currentList->isPermissionDeniedError()) {
-			echo '<tr '. $HTML->boxGetAltRowStyle($j) .'>';
 			if ($currentList->isError()) {
+				/*
 				echo '<td colspan="4">'.$currentList->getErrorMessage().'</td>';
-			} elseif ($currentList->getStatus() == MAIL__MAILING_LIST_IS_REQUESTED) {
+				*/
+			}
+			elseif ($currentList->getStatus() == MAIL__MAILING_LIST_IS_REQUESTED) {
+				/*
 				echo '<td class="halfwidth" colspan="2"><strong>'.$currentList->getName().'</strong></td>'.
 					'<td width="25%">'.htmlspecialchars($currentList->getDescription()). '</td>'.
 					'<td width="25%" class="align-center">'._('Not activated yet').'</td>';
-			} else {
-				echo '<td width="25%">'.
+				*/
+			}
+			else {
+				if ($cnt == 0) {
+					echo '<p>Choose a list to browse, search, and post messages.</p>';
+
+					// Has non-empty table: first item.
+					// Start header.
+					echo $HTML->listTableTop($tableHeaders);
+				}
+				echo '<tr '. $HTML->boxGetAltRowStyle($cnt++) .'>';
+				echo '<td width="25%">'. 
 					'<strong><a href="'.$currentList->getArchivesUrl().'" target="_blank">' .
 					sprintf(_('%s Archives'), $currentList->getName()).'</a></strong></td>'.
 					'<td width="25%" align="center"><a href="&#109;&#097;&#105;&#108;&#116;&#111;:'.$currentList->getListEmail().'">'.$currentList->getListEmail(). '</a></td>'.
 					'<td width="25%">'.htmlspecialchars($currentList->getDescription()). '</td>'.
 					'<td width="25%" class="align-center"><a href="'.$currentList->getExternalInfoUrl().'" target="_blank">'._('Subscribe/Unsubscribe/Preferences').'</a>'.
 					'</td>';
+				echo '</tr>';
 			}
-			echo '</tr>';
 		}
 	}
 
-	echo $HTML->listTableBottom();
+	if ($cnt > 0) {
+		echo $HTML->listTableBottom();
+	}
+	else {
+		echo "<br/><br/>Mailing lists have been deprecated. " .
+                                "If you have questions, please contact the " .
+                                "<a href='/sendmessage.php?recipient=admin&groupname=" .
+                                $group->getUnixName() .
+                                "'>SimTK WebMaster</a>.";
+	}
 
 	mail_footer();
 
-} else {
+}
+else {
 
 	exit_no_group();
 
