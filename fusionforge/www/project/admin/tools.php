@@ -371,6 +371,13 @@ else { ?>
 </form>
 
 <br />
+<p>
+Please contact the <a href="/sendmessage.php?recipient=admin<?php
+	if ($group !== false) {
+		echo "&groupname=" . $group->getUnixName();
+	}
+?>">SimTK webmaster</a> to add or delete a mailing list.
+</p>
 
 <?php
 echo $HTML->boxBottom();
