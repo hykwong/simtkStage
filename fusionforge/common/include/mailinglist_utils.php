@@ -43,9 +43,14 @@ if (!defined('MAILING_LISTS_VERSION')) {
 		define('MAILING_LISTS_VERSION', 2);
 	}
 }
+
+// Utility to query MailmanWeb database.
+function queryMailmanWeb($theQuery, $arrParams) {
+	return queryMailman($theQuery, $arrParams, "ml_name_web");
+}
  
 // Utility to query Mailman3 database.
-function queryMailman($theQuery, $arrParams) {
+function queryMailman($theQuery, $arrParams, $ml_name=false) {
 
 	// Check whether mailinglists.ini is present.
 	if (!file_exists("/etc/gforge/config.ini.d/mailinglists.ini")) {
@@ -54,8 +59,11 @@ function queryMailman($theQuery, $arrParams) {
 	$arrMailingListsConfig = parse_ini_file("/etc/gforge/config.ini.d/mailinglists.ini");
 
 	// Check for each parameter's presence.
-	if (isset($arrMailingListsConfig["ml_name"])) {
-		$mlName = $arrMailingListsConfig["ml_name"];
+	if ($ml_name === false) {
+		$ml_name = "ml_name";
+	}
+	if (isset($arrMailingListsConfig[$ml_name])) {
+		$mlName = $arrMailingListsConfig[$ml_name];
 	}
 	if (isset($arrMailingListsConfig["ml_user"])) {
 		$mlUser = $arrMailingListsConfig["ml_user"];
@@ -226,63 +234,66 @@ function updateMailingListsEmailAddr($userName, $userEmailOld, $userEmailNew) {
 	fclose($fp);
 }
 
-// Remove user email address from all mailing lists.
-function removeMailingListsEmailAddr($userName, $userEmailOld) {
+// Get owners in mailing list.
+function getOwnersInMailingList($listName) {
 
-	if (MAILING_LISTS_VERSION != 3) {
-		// This method is only in Mailman3.
-		return;
+	if (MAILING_LISTS_VERSION == 2) {
+		return false;
 	}
 
-	$userEmailOld = escapeshellcmd($userEmailOld);
-	if (!validate_email($userEmailOld)) {
-		return;
+	// Mailman3
+
+	$strQuery = "SELECT email FROM member m " .
+		"JOIN mailinglist ml ON m.list_id=ml.list_id " .
+		"JOIN address a ON a.id=m.address_id " .
+		"WHERE list_name=$1 AND role=2";
+	$arrParams = array($listName);
+	$res = queryMailman($strQuery, $arrParams);
+	if ($res == null) {
+		return false;
+	}
+	$arrOwners = array();
+	while ($row = pg_fetch_array($res, null, PGSQL_ASSOC)) {
+		$arrOwners[] = $row["email"];
 	}
 
-	// Get mailing lists host.
-	$mlHost = forge_get_config("lists_host");
-	if (!isset($mlHost)) {
-		// Cannot get mailing lists credentials.
-		return;
-	}
-	$strPrepend = "ssh root@" . $mlHost . " ";
+	// Free resultset.
+	pg_free_result($res);
 
-	$cmdRemoveAddr = $strPrepend . 
-		"/opt/mailman/venv/bin/mailman --run-as-root " .
-		"delmembers --fromall -m $userEmailOld";
-
-	$retStatus = exec($cmdRemoveAddr);
-
-	$fp = fopen("/opt/tmp/MailingListChangeAddress.log", "a+");
-	fwrite($fp, "User $userName : Removed $userEmailOld at " . date('Y-m-d H:i:s') . "\n");
-	fclose($fp);
-
-	// NOTE: After delmembers, database may still contain email address.
-	// The email address entry interferes with future operations 
-	// like changeaddress and the email address needs to be 
-	// removed from the database.
-	removeAddrFromDB($userEmailOld);
-
-	return;
+	return $arrOwners;
 }
 
-// Remove email address from Mailman3 database.
-function removeAddrFromDB($userEmailOld) {
+// Get roles in mailing list.
+function getRolesInMailingList($listName, $userEmail) {
 
-	$strQuery  = "DELETE FROM address WHERE email=$1";
-	$res = queryMailman($strQuery, array($userEmailOld));
+	if (MAILING_LISTS_VERSION == 2) {
+		return false;
+	}
 
-	$fp = fopen("/opt/tmp/MailingListChangeAddress.log", "a+");
+	// Mailman3
+
+	$strQuery = "SELECT role FROM member m " .
+		"JOIN mailinglist ml ON m.list_id=ml.list_id " .
+		"JOIN address a ON a.id=m.address_id " .
+		"WHERE list_name=$1 AND " .
+		"email=$2";
+	$arrParams = array($listName, $userEmail);
+	$res = queryMailman($strQuery, $arrParams);
 	if ($res == null) {
-		fwrite($fp, "Cannot remove from DB: $userEmailOld at " . date('Y-m-d H:i:s') . "\n");
+		return false;
 	}
-	else {
-		fwrite($fp, "Removed from DB: $userEmailOld at " . date('Y-m-d H:i:s') . "\n");
+	$arrRoles = array();
+	while ($row = pg_fetch_array($res, null, PGSQL_ASSOC)) {
+		$arrRoles[] = intval($row["role"]);
+	}
 
-		// Free resultset.
-		pg_free_result($res);
+	// Free resultset.
+	pg_free_result($res);
+
+	if (count($arrRoles) == 0) {
+		return false;
 	}
-	fclose($fp);
+	return $arrRoles;
 }
 
 // Check whether user is member of mailing list.
@@ -401,14 +412,15 @@ function removeMemberFromMailingList($listName, $userEmail) {
 
 	$userEmail = escapeshellcmd($userEmail);
 	if (!validate_email($userEmail)) {
-		return;
+		// Invalid email.
+		return false;
 	}
 
 	// Get mailing lists host.
 	$mlHost = forge_get_config("lists_host");
 	if (!isset($mlHost)) {
 		// Cannot get mailing lists credentials.
-		return;
+		return false;
 	}
 	$strPrepend = "ssh root@" . $mlHost . " ";
 
@@ -419,27 +431,70 @@ function removeMemberFromMailingList($listName, $userEmail) {
 	}
 	else if (MAILING_LISTS_VERSION == 3) {
 
+		// Mailman3.
+
 		if (!isListPresentMailman3($listName)) {
 			// Ignore. Mailing list is not present.
-			return;
+			return false;
 		}
 
-		// Mailman3.
-		$cmdUnsubscribe = $strPrepend . 
-			"/opt/mailman/venv/bin/mailman --run-as-root delmembers " .
-			"-m $userEmail " .
-			"-l $listName". "@" . $mlHost;
+		$arrOwners = getOwnersInMailingList($listName);
+		if ($arrOwners !== false && 
+			in_array($userEmail, $arrOwners) && 
+			count($arrOwners) === 1) {
+			// Should not remove last owner in mailing list.
+			return "Cannot remove the last owner of mailing list";
+		}
+
+		// Get member roles in mailing list.
+		$arrRoles = getRolesInMailingList($listName, $userEmail);
+		if ($arrRoles === false) {
+			// Not a member of list. Ignore.
+			return false;
+		}
+
+		if (in_array(2, $arrRoles, true)) {
+			// Remove owner.
+			$cmdUnsubscribe = $strPrepend . 
+				"/opt/mailman/venv/bin/mailman --run-as-root " .
+				"admins " .
+				"-r owner " .
+				"-d $userEmail " .
+				"$listName". "@" . $mlHost;
+			exec($cmdUnsubscribe);
+		}
+
+		if (in_array(3, $arrRoles, true)) {
+			// Remove moderator.
+			$cmdUnsubscribe = $strPrepend . 
+				"/opt/mailman/venv/bin/mailman --run-as-root " .
+				"admins " .
+				"-r moderator " .
+				"-d $userEmail " .
+				"$listName". "@" . $mlHost;
+			exec($cmdUnsubscribe);
+		}
+
+		if (in_array(1, $arrRoles, true)) {
+			// Remove member.
+			$cmdUnsubscribe = $strPrepend . 
+				"/opt/mailman/venv/bin/mailman --run-as-root " .
+				"delmembers " .
+				"-m $userEmail " .
+				"-l $listName". "@" . $mlHost;
+			exec($cmdUnsubscribe);
+		}
 	}
 	else {
 		// Invalid version. Do not proceed.
-		return;
+		return false;
 	}
-
-	exec($cmdUnsubscribe);
 
 	$fp = fopen("/opt/tmp/MailingListUnsubscription.log", "a+");
 	fwrite($fp, "$listName : Removed $userEmail at " . date('Y-m-d H:i:s') . "\n");
 	fclose($fp);
+
+	return true;
 }
 
 

@@ -55,7 +55,6 @@ if ($group_id) {
 	}
 
 	mail_header(array(
-		//'title' => sprintf(_('Mailing Lists for %s'), $group->getPublicName())
 		'title' => sprintf(_('Mailing Lists'))
 	));
 
@@ -77,12 +76,69 @@ if ($group_id) {
 		exit;
 	}
 
-	$tableHeaders = array(
-		_('Mailing List'),
-		_('Address'),
-		_('Description'),
-		_('Subscription')
-	);
+	if (session_loggedin()) {
+		$action = false;
+		if (getStringFromRequest('submit') == "Subscribe") {
+			$action = "Subscribe";
+		}
+		else if (getStringFromRequest('submit') == "Unsubscribe") {
+			$action = "Unsubscribe";
+		}
+		$listID = getIntFromRequest('list_id');
+		if ($listID !== 0 && $action !== false) {
+			// Get user.
+			$theUser = session_get_user();
+			$userName = escapeshellcmd($theUser->getUnixName());
+			$userEmail = escapeshellcmd($theUser->getEmail());
+
+			// Handle un/subscription action.
+			$listName = false;
+			for ($j = 0; $j < count($mlArray); $j++) {
+				$currentList =& $mlArray[$j];
+				if (!$currentList->isPermissionDeniedError() && 
+					!$currentList->isError() &&
+					$currentList->getStatus() != MAIL__MAILING_LIST_IS_REQUESTED) {
+					if ($currentList->getID() == $listID) {
+						// Found list.
+						$listName = $currentList->getName();
+						break;
+					}
+				}
+			}
+			if ($listName !== false) {
+				if ($action == "Subscribe") {
+					addMemberToMailingList($listName, 
+						$userName, 
+						$userEmail,
+						isDigestEnabled($listName));
+				}
+				else if ($action == "Unsubscribe") {
+					$res = removeMemberFromMailingList($listName, $userEmail);
+					if ($res !== true && $res !== false) {
+						$error_msg = $res;
+						echo $HTML->error_msg($res);
+					}
+				}
+			}
+		}
+	}
+
+	if (session_loggedin()) {
+		// User logged in.
+		$tableHeaders = array(
+			'Mailing List',
+			'Address',
+			'Description',
+			'Subscription'
+		);
+	}
+	else {
+		$tableHeaders = array(
+			'Mailing List',
+			'Address',
+			'Description',
+		);
+	}
 
 	$cnt = 0;
 	$hasDenied = false;
@@ -114,9 +170,37 @@ if ($group_id) {
 					'<strong><a href="'.$currentList->getArchivesUrl().'" target="_blank">' .
 					sprintf(_('%s Archives'), $currentList->getName()).'</a></strong></td>'.
 					'<td width="25%" align="center"><a href="&#109;&#097;&#105;&#108;&#116;&#111;:'.$currentList->getListEmail().'">'.$currentList->getListEmail(). '</a></td>'.
-					'<td width="25%">'.htmlspecialchars($currentList->getDescription()). '</td>'.
-					'<td width="25%" class="align-center"><a href="'.$currentList->getExternalInfoUrl().'" target="_blank">'._('Subscribe/Unsubscribe/Preferences').'</a>'.
-					'</td>';
+					'<td width="25%">'.htmlspecialchars($currentList->getDescription()). '</td>';
+
+				if (session_loggedin()) {
+					// Get user.
+					$theUser = session_get_user();
+					$userName = escapeshellcmd($theUser->getUnixName());
+					$userEmail = escapeshellcmd($theUser->getEmail());
+					$subscribed = isMemberOfMailingList($currentList->getName(), 
+							$userEmail);
+					// Action.
+					if ($subscribed) {
+						$action = "Unsubscribe";
+					}
+					else {
+						$action = "Subscribe";
+					}
+					// Form.
+					echo "<td width='25%' class='align-center'>";
+					echo "<form id='mySubmit' action='" . 
+						util_make_url('/mail/index.php?group_id=' . $group_id) . "' " .
+						"method='post' " .
+						"enctype='multipart/form-data'>";
+					echo "<input type='hidden' name='list_id' " .
+						"value='" . $currentList->getID() . "'/>";
+					echo "<input type='submit' name='submit' " .
+						"value='" . $action . "' " .
+						"class='btn-blue share_text_button'/>";
+					echo "</form>";
+					echo "</td>";
+				}
+
 				echo '</tr>';
 			}
 		}
@@ -142,10 +226,7 @@ if ($group_id) {
 	}
 
 	mail_footer();
-
 }
 else {
-
 	exit_no_group();
-
 }

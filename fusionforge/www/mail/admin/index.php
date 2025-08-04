@@ -34,6 +34,7 @@ require_once $gfwww.'mail/admin/../mail_utils.php';
 
 require_once $gfcommon.'mail/MailingList.class.php';
 require_once $gfcommon.'mail/MailingListFactory.class.php';
+require_once $gfcommon.'include/mailinglist_utils.php';
 
 global $HTML;
 ?>
@@ -132,6 +133,20 @@ if ($group_id) {
 					echo "<h3>Edit Existing Lists</h3>";
 					echo "<p>" . sprintf("Please note that private lists can still be viewed by members of your project, but are not listed on %s.", forge_get_config ("forge_name")) . "</p>";
 					echo $HTML->listTableTop($tableHeaders);
+
+					$user = session_get_user(); // get the session user
+					$user_id = $user->getID();
+					$email = $user->getEmail();
+					$token = bin2hex(random_bytes(16));
+					$arrParams = array($user_id, $token, $mlName, $email);
+					$sql = "INSERT INTO auth_list_logins " .
+						"(user_id,token,mailinglist_name,email) " .
+						"VALUES ($1,$2,$3,$4) " .
+						"ON CONFLICT (email) DO UPDATE SET " .
+						"token=EXCLUDED.token," .
+						"created_at=now()," .
+						"expires_at=now() + INTERVAL '30 minutes'";
+					$res = queryMailmanWeb($sql, $arrParams);
 				}
 
 				echo "<tr ". $HTML->boxGetAltRowStyle($cnt++) . ">" .
@@ -140,9 +155,9 @@ if ($group_id) {
 				echo "<td class='align-center'>";
 				echo "<a href='https://" . $mlHost . 
 					"/mailman3/lists/" . $mlName . 
-					"." . $mlHost .  "' " .
+					"." . $mlHost .  "?token=$token' " .
 					"target='_blank'>" .
-					"Administration</a></td>";
+					"Manage List</a></td>";
 				echo "</tr>";
 			}
 		}
@@ -356,7 +371,7 @@ if ($group_id) {
 				echo '<a href="'.getStringFromServer('PHP_SELF').'?group_id='.$group_id.'&amp;group_list_id='.$currentList->getID().'&amp;change_status=1">'._('Update').'</a>';
 				echo '&nbsp&nbsp</td>';
 				echo '<td class="align-center">';
-				echo '<a href="'.$currentList->getExternalAdminUrl().'?adminpw='.$currentList->getPassword().'" target="_blank">'._('Administration').'</a>';
+				echo '<a href="'.$currentList->getExternalAdminUrl().'?adminpw='.$currentList->getPassword().'" target="_blank">'._('Manage List').'</a>';
 				echo '</td>';
 				echo '</tr>';
 
