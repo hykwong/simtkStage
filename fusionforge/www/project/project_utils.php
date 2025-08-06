@@ -142,7 +142,7 @@ function displayStatsBlock($groupObj) {
 			}
 		}
 		if ($cnt > 0) {
-			echo '<div class="share_text" style="margin-bottom:6px;"><a class="btn-blue share_text_button" href="/mail/index.php?group_id=' . $group_id . '" style="width:158px;">Join Mailing Lists</a></div>';
+			echo '<div class="share_text" style="margin-bottom:6px;"><a class="btn-blue share_text_button" href="/mail/index.php?group_id=' . $group_id . '" style="width:158px;">View Mailing Lists</a></div>';
 		}
 	}
 	

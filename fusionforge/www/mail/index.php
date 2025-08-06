@@ -123,22 +123,13 @@ if ($group_id) {
 		}
 	}
 
-	if (session_loggedin()) {
-		// User logged in.
-		$tableHeaders = array(
-			'Mailing List',
-			'Address',
-			'Description',
-			'Subscription'
-		);
-	}
-	else {
-		$tableHeaders = array(
-			'Mailing List',
-			'Address',
-			'Description',
-		);
-	}
+	// User logged in.
+	$tableHeaders = array(
+		'Mailing List',
+		'Address',
+		'Description',
+		'Action'
+	);
 
 	$cnt = 0;
 	$hasDenied = false;
@@ -198,6 +189,11 @@ if ($group_id) {
 						"value='" . $action . "' " .
 						"class='btn-blue share_text_button'/>";
 					echo "</form>";
+					echo "</td>";
+				}
+				else {
+					echo "<td width='25%' class='align-center'>";
+					echo "You have to log into your SimTK account to subscribe/unsubscribe";
 					echo "</td>";
 				}
 
