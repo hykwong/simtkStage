@@ -88,6 +88,7 @@ class MailingList extends FFError {
 					return;
 				}
 			}
+
 			if (!$this->isPublic()) {
 				$perm =& $this->Group->getPermission ();
 
@@ -308,7 +309,13 @@ Thank you for registering your project with %1$s.'), forge_get_config ('forge_na
 	 * @return	boolean	is_public.
 	 */
 	function isPublic() {
-		return $this->dataArray['is_public'];
+		// If available, get mailing list information from Mailman3.
+		if (isAdvertised($this->getName(), $isAdvertised)) {
+			return $isAdvertised;
+		}
+		else {
+			return $this->dataArray['is_public'];
+		}
 	}
 
 	/**
@@ -327,7 +334,13 @@ Thank you for registering your project with %1$s.'), forge_get_config ('forge_na
 	 * @return	string	The description.
 	 */
 	function getDescription() {
-		return $this->dataArray['description'];
+		// If available, get mailing list information from Mailman3.
+		if (getListDescription($this->getName(), $strDescr)) {
+			return $strDescr;
+		}
+		else {
+			return $this->dataArray['description'];
+		}
 	}
 
 	/**

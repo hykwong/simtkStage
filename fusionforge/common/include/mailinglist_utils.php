@@ -120,6 +120,65 @@ function getUndeprecatedMailLists($groupId) {
 	return $arrMailList;
 }
 
+// Check whether the mailing list is advertised.
+function isAdvertised($listName, &$isAdvertised) {
+
+	if (MAILING_LISTS_VERSION !== 3) {
+		// This check is only for Mailman3.
+		return false;
+	}
+
+	$isAdvertised = false;
+
+	$strQuery = "SELECT advertised FROM mailinglist WHERE list_name=$1";
+	$arrParams = array($listName);
+	$res = queryMailman($strQuery, $arrParams);
+	if ($res == null) {
+		return false;
+	}
+	while ($row = pg_fetch_array($res, null, PGSQL_ASSOC)) {
+		$strIsAdvertised = $row["advertised"];
+		if ($strIsAdvertised == "f") {
+			$isAdvertised = false;
+		}
+		else {
+			$isAdvertised = true;
+		}
+	}
+
+	// Free resultset.
+	pg_free_result($res);
+
+	return true;
+}
+
+// Get mailing list description
+function getListDescription($listName, &$strDescr) {
+
+	if (MAILING_LISTS_VERSION !== 3) {
+		// This check is only for Mailman3.
+		return false;
+	}
+
+	$strDescr = "";
+
+	$strQuery = "SELECT description FROM mailinglist WHERE list_name=$1";
+	$arrParams = array($listName);
+	$res = queryMailman($strQuery, $arrParams);
+	if ($res == null) {
+		return false;
+	}
+	while ($row = pg_fetch_array($res, null, PGSQL_ASSOC)) {
+		$strDescr = $row["description"];
+	}
+
+	// Free resultset.
+	pg_free_result($res);
+
+	return true;
+}
+
+// Check whether digests are enabled in mailing list.
 // Is mailing list present in Mailman3
 function isListPresentMailman3($listName) {
 
