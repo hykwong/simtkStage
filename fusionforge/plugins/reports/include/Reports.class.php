@@ -3,7 +3,7 @@
  *
  * reports plugin Class
  * 
- * Copyright 2005-2024, SimTK Team
+ * Copyright 2005-2025, SimTK Team
  *
  * This file is part of the SimTK web portal originating from        
  * Simbios, the NIH National Center for Physics-Based               
@@ -180,7 +180,8 @@ class Reports extends FFError {
 		}
 
 		
-		
+		$resPackages = false;
+		if (count($packages) > 0) {
 		if ($fromYear != false && $fromMonth != false && $fromDay != false) {
 			$resPackages = db_query_params ("SELECT package_id,
 				CASE WHEN simtk_filetype = 'URL' THEN 2 ELSE CASE WHEN type_id = 9997 THEN 1 ELSE 0 END END AS category,
@@ -206,6 +207,7 @@ class Reports extends FFError {
 				. ") GROUP BY category, package_id 
 				ORDER BY package_id, category",array());
 		}
+		}
 		
 		if ( $resPackages )
 		{
@@ -220,6 +222,8 @@ class Reports extends FFError {
 
 		
 		
+		$resReleaseTotal = false;
+		if (count($packages) > 0) {
 		if ($fromYear != false && $fromMonth != false && $fromDay != false) {
 			$resReleaseTotal = db_query_params ("SELECT p.package_id AS package_id, r.release_id, count( distinct user_id ) AS users
 				FROM frs_file f 
@@ -243,6 +247,7 @@ class Reports extends FFError {
 				. ") GROUP BY p.package_id, r.release_id
 				ORDER BY package_id, release_id",array());
 		}
+		}
 		
 		if ( $resReleaseTotal )
 		{
@@ -255,11 +260,14 @@ class Reports extends FFError {
 		}
 		
 		
+		$releases = false;
+		if (count($packages) > 0) {
 		$releases = db_query_params ("SELECT p.package_id, r.release_id, r.status_id AS status, r.name, release_date
 			FROM frs_release r
 			JOIN frs_package p ON r.package_id = p.package_id
 			JOIN frs_file f ON f.release_id = r.release_id
 			WHERE p.package_id IN ( " . implode( ",", array_keys( $packages ) ) . ")",array());
+		}
 		
 		if ( $releases )
 		{
@@ -277,6 +285,8 @@ class Reports extends FFError {
 			}
 		}
 		
+		$resPackageTotal = false;
+		if (count($packages) > 0) {
 		if ($fromYear != false && $fromMonth != false && $fromDay != false) {
 			$resPackageTotal = db_query_params ("SELECT p.package_id AS package_id, count( distinct user_id ) AS users
 				FROM frs_package p 
@@ -300,6 +310,7 @@ class Reports extends FFError {
 				. ") GROUP BY p.package_id
 				ORDER BY package_id",array());
 		}
+		}
 		
 		if ( $resPackageTotal )
 		{
@@ -310,11 +321,14 @@ class Reports extends FFError {
 			}
 		}
 		
+		$linkRes = false;
+		if (count($packages) > 0) {
 		$linkRes = db_query_params ("SELECT DISTINCT r.release_id, r.name
 			FROM frs_release r 
 			JOIN frs_file f ON r.release_id = f.release_id 
 			JOIN frs_package p ON r.package_id = p.package_id
 			WHERE p.package_id IN ( " . implode( ",", array_keys( $packages ) ) . ")" . " AND r.status_id = 1 AND p.status_id = 1 AND p.is_public = 1",array());
+		}
 		
 		//if ( $public )
 		//{
@@ -336,6 +350,8 @@ class Reports extends FFError {
 		
 		//echo implode( ",", array_keys( $packages ));
 		
+		$packageList = false;
+		if (count($packages) > 0) {
 		$packageList = db_query_params ("SELECT p.package_id, p.name, p.status_id AS status, p.is_public,
 			MAX( release_date ) AS release_date
 			FROM frs_package p
@@ -343,6 +359,7 @@ class Reports extends FFError {
 			JOIN frs_file f ON f.release_id = r.release_id
 			WHERE p.package_id IN ( " . implode( ",", array_keys( $packages ) )
 			. ") GROUP BY p.package_id, p.name, p.status_id, p.is_public",array());
+		}
 		
         $packageArray = array();
 		
