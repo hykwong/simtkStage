@@ -4,7 +4,7 @@
  *
  * publications plugin Class which contains methods for adding, deleting and editing pubs.
  * 
- * Copyright 2005-2021, SimTK Team
+ * Copyright 2005-2025, SimTK Team
  *
  * This file is part of the SimTK web portal originating from        
  * Simbios, the NIH National Center for Physics-Based               
@@ -213,7 +213,10 @@ class Publication extends FFError {
 			$url = "http://" . $url;
 		}
 		// Try to access site.
-		$site = @fopen($url, "r");
+		$site = false;
+		if ($url) {
+			$site = @fopen($url, "r");
+		}
 		if ($site) {
 			// Can access site. Close.
 			fclose($site);
