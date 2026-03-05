@@ -4,6 +4,7 @@
 * This file is part of the phpBB Forum Software package.
 *
 * @copyright (c) phpBB Limited <https://www.phpbb.com>
+* @copyright 2016-2026, SimTK Team
 * @license GNU General Public License, version 2 (GPL-2.0)
 *
 * For full copyright and license information, please see
@@ -103,8 +104,11 @@ function make_forum_select($select_id = false, $ignore_id = false, $ignore_acl =
 	{
 		if ($row['left_id'] < $right)
 		{
-			$padding .= '&nbsp; &nbsp;';
-			$padding_store[$row['parent_id']] = $padding;
+			// NOTE: DO NOT add padding; otherwise, the forum names will be
+			// hard to find to be selected from the choice menu as the
+			// number of forum grows.
+			//$padding .= '&nbsp; &nbsp;';
+			//$padding_store[$row['parent_id']] = $padding;
 		}
 		else if ($row['left_id'] > $right + 1)
 		{
